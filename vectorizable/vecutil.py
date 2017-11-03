@@ -9,6 +9,7 @@ Description: Utility functions
 """
 
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 
 _LEN = np.vectorize(len)
 _SHAPES = np.vectorize(lambda x: np.array(x.shape), signature='()->()', otypes=[np.ndarray])
@@ -30,26 +31,37 @@ def bbox_ndarray(ndarr):
     return tuple(bbox)
 
 
-def array_augment(ndarr, func, padding='', with_mask=False, dtype='object'):
+def array_augment(ndarr, func,  # pylint: disable=too-many-locals
+                  padding='', with_mask=False, dtype='object'):
     """ Apply the function to each element in the tensor and augment the dimensions with the
         returned list/ndarray.
     """
-    applied = np.empty(ndarr.shape, dtype='object')
-    for idx in np.ndindex(*ndarr.shape):
-        applied[idx] = np.array(func(ndarr[idx]))
+    farr = ndarr.flatten()
+    applied = np.empty(ndarr.size, dtype='object')
+    itemsize = applied.dtype.itemsize
+    for idx in range(farr.size):
+        applied[idx] = np.array(func(farr[idx]))
     elem_shapes = _SHAPES(applied)
     bbox = bbox_ndarray(elem_shapes)
+    bbox_size = np.prod(bbox) * itemsize
+    bbox_strides = tuple((np.cumprod(bbox[:0:-1])*itemsize)[::-1]) + (itemsize,)
 
-    unpacked = np.empty(ndarr.shape + bbox, dtype=dtype)
-    if with_mask:
-        mask = np.zeros(applied.shape + bbox, dtype=np.bool_)
-        for idx_pre in np.ndindex(*applied.shape):
+    applied_shape = ndarr.shape + bbox
+    applied_strides = tuple(x // ndarr.dtype.itemsize * bbox_size
+                            for x in ndarr.strides) + bbox_strides
+    unpacked = np.empty((farr.size,) + bbox, dtype=dtype)
+    if with_mask:  # pylint: disable=no-else-return
+        mask = np.zeros((farr.size,) + bbox, dtype=np.bool_)
+        for idx_pre in range(farr.size):
             for idx_suf in np.ndindex(*bbox):
                 if np.any(idx_suf >= elem_shapes[idx_pre]):
-                    unpacked[idx_pre + idx_suf] = padding
+                    unpacked[(idx_pre,) + idx_suf] = padding
                 else:
-                    unpacked[idx_pre + idx_suf] = applied[idx_pre][idx_suf]
-                    mask[idx_pre + idx_suf] = 1
+                    unpacked[(idx_pre,) + idx_suf] = applied[idx_pre][idx_suf]
+                    mask[(idx_pre,) + idx_suf] = 1
+        unpacked = as_strided(unpacked, shape=applied_shape, strides=applied_strides)
+        mask = as_strided(mask, shape=applied_shape,
+                          strides=tuple(x // itemsize for x in applied_strides))
         return unpacked, mask
     else:
         for idx_pre in np.ndindex(*applied.shape):
@@ -58,4 +70,5 @@ def array_augment(ndarr, func, padding='', with_mask=False, dtype='object'):
                     unpacked[idx_pre + idx_suf] = padding
                 else:
                     unpacked[idx_pre + idx_suf] = applied[idx_pre][idx_suf]
+        unpacked = as_strided(unpacked, shape=applied_shape, strides=applied_strides)
         return unpacked

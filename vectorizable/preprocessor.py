@@ -197,3 +197,7 @@ class CharVectorizer(Preprocessor):
 
     def __len__(self):
         return len(self.digitizer)
+
+
+# TODO MovingWindow
+# perhaps we should consider using strides wisely

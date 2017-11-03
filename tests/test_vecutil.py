@@ -2,6 +2,7 @@
 """ Tests for vecutil """
 
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 from vectorizable.vecutil import array_augment, bbox_ndarray
 
 
@@ -39,6 +40,21 @@ def test_array_augment2():
     assert uarr[0, 0, 0] == 'a'
     assert uarr[0, 1, 0] == 'a'
     assert uarr[0, 0, 3] == ''
+
+
+def test_array_augment_strided():
+    """ test vectorizable.vecutil.unpack_lists """
+    arr = np.array(['a b', 'a b c', 'a b c d'], dtype='object')
+    sarr = as_strided(arr, shape=(2, 2), strides=(8, 8))
+    uarr = array_augment(sarr, lambda x: np.array([x.split(), x.split()]))
+    print(uarr)
+    assert uarr.shape == (2, 2, 2, 4)
+    assert uarr[0, 0, 0, 0] == 'a'
+    assert uarr[1, 0, 0, 0] == 'a'
+    assert uarr[0, 1, 1, 0] == 'a'
+    assert uarr[0, 0, 0, 3] == ''
+    assert uarr[1, 0, 0, 3] == ''
+    assert uarr[0, 1, 0, 3] == ''
 
 
 def test_array_augment_mask():
