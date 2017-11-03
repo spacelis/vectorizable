@@ -73,5 +73,27 @@ def test_array_augment_mask():
     assert mask[0, 0, 3] == 0
 
 
+def test_array_augment_strided_mask():
+    """ test vectorizable.vecutil.unpack_lists """
+    arr = np.array(['a b', 'a b c', 'a b c d'], dtype='object')
+    sarr = as_strided(arr, shape=(2, 2), strides=(8, 8))
+    uarr, mask = array_augment(sarr, lambda x: np.array([x.split(), x.split()]), with_mask=True)
+    print(uarr)
+    assert uarr.shape == (2, 2, 2, 4)
+    assert uarr[0, 0, 0, 0] == 'a'
+    assert uarr[1, 0, 0, 0] == 'a'
+    assert uarr[0, 1, 1, 0] == 'a'
+    assert uarr[0, 0, 0, 3] == ''
+    assert uarr[1, 0, 0, 3] == ''
+    assert uarr[0, 1, 0, 3] == ''
+    print(mask)
+    assert mask.shape == (2, 2, 2, 4)
+    assert mask[0, 0, 0, 0] == 1
+    assert mask[1, 0, 0, 0] == 1
+    assert mask[0, 1, 1, 0] == 1
+    assert mask[0, 0, 0, 3] == 0
+    assert mask[1, 0, 0, 3] == 0
+    assert mask[0, 1, 0, 3] == 0
+
 if __name__ == "__main__":
     test_bbox_ndarray()
