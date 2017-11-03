@@ -18,12 +18,14 @@ def test_array_augment1():
     arr = np.array(['a b', 'a b c'])
     uarr = array_augment(arr, lambda x: x.split())
     print(uarr)
+    assert uarr.shape == (2, 3)
     assert uarr[0, 0] == 'a'
     assert uarr[0, 2] == ''
 
     arr = np.array(['Hello World', '你 好 吗!'])
     uarr = array_augment(arr, lambda x: np.array(x.split()))
     print(uarr)
+    assert uarr.shape == (2, 3)
     assert uarr[0, 0] == 'Hello'
     assert uarr[0, 2] == ''
 
@@ -33,9 +35,26 @@ def test_array_augment2():
     arr = np.array(['a b', 'a b c', 'a b c d'])
     uarr = array_augment(arr, lambda x: np.array([x.split(), x.split()]))
     print(uarr)
+    assert uarr.shape == (3, 2, 4)
     assert uarr[0, 0, 0] == 'a'
     assert uarr[0, 1, 0] == 'a'
     assert uarr[0, 0, 3] == ''
+
+
+def test_array_augment_mask():
+    """ test vectorizable.vecutil.unpack_lists """
+    arr = np.array(['a b', 'a b c', 'a b c d'])
+    uarr, mask = array_augment(arr, lambda x: np.array([x.split(), x.split()]), with_mask=True)
+    print(uarr)
+    assert uarr.shape == (3, 2, 4)
+    assert uarr[0, 0, 0] == 'a'
+    assert uarr[0, 1, 0] == 'a'
+    assert uarr[0, 0, 3] == ''
+    print(mask)
+    assert uarr.shape == (3, 2, 4)
+    assert mask[0, 0, 0] == 1
+    assert mask[0, 1, 0] == 1
+    assert mask[0, 0, 3] == 0
 
 
 if __name__ == "__main__":

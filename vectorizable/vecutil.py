@@ -30,7 +30,7 @@ def bbox_ndarray(ndarr):
     return tuple(bbox)
 
 
-def array_augment(ndarr, func, padding='', dtype='object'):
+def array_augment(ndarr, func, padding='', with_mask=False, dtype='object'):
     """ Apply the function to each element in the tensor and augment the dimensions with the
         returned list/ndarray.
     """
@@ -41,10 +41,21 @@ def array_augment(ndarr, func, padding='', dtype='object'):
     bbox = bbox_ndarray(elem_shapes)
 
     unpacked = np.empty(ndarr.shape + bbox, dtype=dtype)
-    for idx_pre in np.ndindex(*applied.shape):
-        for idx_suf in np.ndindex(*bbox):
-            if np.any(idx_suf >= elem_shapes[idx_pre]):
-                unpacked[idx_pre + idx_suf] = padding
-            else:
-                unpacked[idx_pre + idx_suf] = applied[idx_pre][idx_suf]
-    return unpacked
+    if with_mask:
+        mask = np.zeros(applied.shape + bbox, dtype=np.bool_)
+        for idx_pre in np.ndindex(*applied.shape):
+            for idx_suf in np.ndindex(*bbox):
+                if np.any(idx_suf >= elem_shapes[idx_pre]):
+                    unpacked[idx_pre + idx_suf] = padding
+                else:
+                    unpacked[idx_pre + idx_suf] = applied[idx_pre][idx_suf]
+                    mask[idx_pre + idx_suf] = 1
+        return unpacked, mask
+    else:
+        for idx_pre in np.ndindex(*applied.shape):
+            for idx_suf in np.ndindex(*bbox):
+                if np.any(idx_suf >= elem_shapes[idx_pre]):
+                    unpacked[idx_pre + idx_suf] = padding
+                else:
+                    unpacked[idx_pre + idx_suf] = applied[idx_pre][idx_suf]
+        return unpacked
