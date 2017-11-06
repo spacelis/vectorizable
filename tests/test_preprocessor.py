@@ -10,10 +10,9 @@ Description: Test vectorization
 from collections import defaultdict
 from itertools import cycle
 
+import numpy as np
 import pandas as pd
-from vectorizable.preprocessor import Digitizer
-from vectorizable.preprocessor import VectorizableDataframe
-from vectorizable.preprocessor import Tokenizer, CharVectorizer
+import xarray as xr
 
 _A = 'This is not a test.'
 _B = 'I am a vector'
@@ -23,6 +22,7 @@ _D = 'Vector'
 def test_digitizer_basic():
     ''' Test Digitizer initialization
     '''
+    from vectorizable.preprocessor import Digitizer
     symbols = 'abcd'
     assert Digitizer(symbols=symbols)('abcd') == [1, 2, 3, 4], \
         'Digitizer should be 1 based'
@@ -39,6 +39,7 @@ def test_digitizer_basic():
 def test_digitizer_add():
     ''' Test combining two digitizer
     '''
+    from vectorizable.preprocessor import Digitizer
     dzr1 = Digitizer(symbols='abc')
     dzr2 = Digitizer(symbols='def')
     assert (dzr1 + dzr2)('f') == [6], 'Digitizers should combine'
@@ -47,6 +48,7 @@ def test_digitizer_add():
 def test_tokenizer():
     ''' Test TokenizerVectorizer
     '''
+    from vectorizable.preprocessor import Tokenizer
     dst = pd.DataFrame({'a': [_A, _B],
                         'b': ['Test Vector 1', _D]}).to_xarray()
     tkr = Tokenizer(['a'])
@@ -61,6 +63,7 @@ def test_tokenizer():
 def test_charvectorizer():
     ''' Test TokenizerVectorizer
     '''
+    from vectorizable.preprocessor import CharVectorizer
     dst = pd.DataFrame({'a': [_A, _B],
                         'b': [_C, _D]}).to_xarray()
     cvr = CharVectorizer(['a'])
@@ -73,6 +76,8 @@ def test_charvectorizer():
 def test_pipable_vectorizer():
     ''' Test piped preprocessors
     '''
+    from vectorizable.preprocessor import Tokenizer
+    from vectorizable.preprocessor import CharVectorizer
     dst = pd.DataFrame({'a': [_A, _B],
                         'b': [_C, _D]}).to_xarray()
     chv = CharVectorizer(['a'])
@@ -83,6 +88,7 @@ def test_pipable_vectorizer():
 
 def test_vdf_naive_vectorizer():
     ''' test vectorizable dataframe '''
+    from vectorizable.preprocessor import VectorizableDataframe
     dst = pd.DataFrame({'a': [_A, _B],
                         'b': [_C, _D]
                        })
@@ -94,6 +100,9 @@ def test_vdf_naive_vectorizer():
 
 def test_vectorizable_dataframe():
     ''' test vectorizable dataframe '''
+    from vectorizable.preprocessor import VectorizableDataframe
+    from vectorizable.preprocessor import Tokenizer
+    from vectorizable.preprocessor import CharVectorizer
     dst = pd.DataFrame({'a': [_A, _B],
                         'b': [_C, _D]
                        })
@@ -107,6 +116,7 @@ def test_vectorizable_dataframe():
 
 def test_vdf_shuffled():
     ''' test vectorizable dataframe '''
+    from vectorizable.preprocessor import VectorizableDataframe
     dst = pd.DataFrame({'a': [_A, _B],
                         'b': [_C, _D]
                        })
@@ -120,6 +130,7 @@ def test_vdf_shuffled():
 
 def test_vdf_minibatch_on_fly():
     ''' test vectorizable dataframe '''
+    from vectorizable.preprocessor import VectorizableDataframe
     dst = pd.DataFrame({'a': [_A, _B],
                         'b': [_C, _D]
                        })
@@ -131,6 +142,7 @@ def test_vdf_minibatch_on_fly():
 
 def test_vdf_minibatch():
     ''' test vectorizable dataframe '''
+    from vectorizable.preprocessor import VectorizableDataframe
     dst = pd.DataFrame({'a': [_A, _B],
                         'b': [_C, _D]
                        })
