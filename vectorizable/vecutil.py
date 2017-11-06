@@ -72,3 +72,12 @@ def array_augment(ndarr, func,  # pylint: disable=too-many-locals
                     unpacked[idx_pre + idx_suf] = applied[idx_pre][idx_suf]
         unpacked = as_strided(unpacked, shape=applied_shape, strides=applied_strides)
         return unpacked
+
+
+def flip_winsize_outsize(shape, dim_sizes):
+    """ Return the size of sliding window for given output size and vice versa.
+        For example, shape=(2,3,4) with sliding windows size=(2,2) will become
+        shape=(2,2,3). That is the last two dimensions becoming the starting
+        points of sliding windows.
+    """
+    return tuple(m - n + 1 for m, n in zip(shape[-len(dim_sizes):], dim_sizes))

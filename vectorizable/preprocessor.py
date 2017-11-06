@@ -14,12 +14,13 @@ import string
 from itertools import count
 from collections import defaultdict
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 import pandas as pd
 import xarray as xr
 from nltk.tokenize import RegexpTokenizer
 
 from .pipe import Pipable
-from .vecutil import array_augment
+from .vecutil import array_augment, flip_winsize_outsize
 
 SIMPLE_TOKENIZER = RegexpTokenizer('[a-zA-Z]+|[0-9]+|-|/')
 
@@ -199,5 +200,35 @@ class CharVectorizer(Preprocessor):
         return len(self.digitizer)
 
 
-# TODO MovingWindow
-# perhaps we should consider using strides wisely
+class SlidingWindow(Preprocessor):
+    """ Moving window restructures the ndarray by strides"""
+    def __init__(self, variables, padding=None, win_widths=None, output_widths=None, axis=(1,)):
+        super(SlidingWindow, self).__init__(variables)
+        self.padding = padding
+        self.axis = axis
+        if output_widths is None and win_widths is None:
+            raise ValueError(
+                'Only one of the two can be used, ethither strides or output_widths'
+            )
+        elif output_widths is not None:
+            self.win_dims = len(output_widths)
+        else:
+            self.win_dims = len(win_widths)
+        self.win_widths = win_widths
+        self.output_widths = output_widths
+
+    def _slided(self, data):
+        win_widths = self.win_widths or flip_winsize_outsize(data.shape, self.output_widths)
+        output_widths = self.output_widths or flip_winsize_outsize(data.shape, self.win_widths)
+        shape_prefix = data.shape[:-self.win_dims]
+        return as_strided(data,
+                          shape=shape_prefix + output_widths + win_widths,
+                          strides=data.strides + data.strides[-self.win_dims:])
+
+    def __call__(self, ds):
+        return ds[self.variables].apply(
+            lambda arr: xr.DataArray(
+                self._slided(arr.data),
+                dims=arr.dims + tuple('w_{0}'.format(n) for n in arr.dims[-self.win_dims:])
+            )
+        )

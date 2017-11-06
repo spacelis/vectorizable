@@ -155,3 +155,31 @@ def test_vdf_minibatch():
     assert 0 < counter[(0, _A)] < draws // 2
     assert 0 < counter[(1, _A)] < draws // 2
     assert counter[(0, _A)] + counter[(1, _A)] == draws // 2
+
+
+def test_sliding_window():
+    ''' test_sliding_window '''
+    from vectorizable.preprocessor import SlidingWindow
+    dst = xr.Dataset({'a': (['x', 'y'], np.array(range(12)).reshape(3, 4))},
+                     coords={'x': range(3),
+                             'y': range(4)})
+    slw = SlidingWindow(['a'], padding=0, win_widths=(2, 2))
+    sds = slw(dst)
+    print(sds['a'])
+    assert np.allclose(sds['a'][0, 0, 0, :], [0, 1])
+    assert np.allclose(sds['a'][0, 0, :, 1], [1, 5])
+    assert np.allclose(sds['a'][1, 1, :, 0], [5, 9])
+
+
+def test_sliding_window_2():
+    ''' test_sliding_window '''
+    from vectorizable.preprocessor import SlidingWindow
+    dst = xr.Dataset({'a': (['x', 'y'], np.array(range(12)).reshape(3, 4))},
+                     coords={'x': range(3),
+                             'y': range(4)})
+    slw = SlidingWindow(['a'], padding=0, output_widths=(2, 2))
+    sds = slw(dst)
+    print(sds['a'])
+    assert np.allclose(sds['a'][0, 0, 0, :], [0, 1, 2])
+    assert np.allclose(sds['a'][0, 0, :, 1], [1, 5])
+    assert np.allclose(sds['a'][1, 1, :, 0], [5, 9])
